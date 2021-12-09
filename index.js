@@ -145,6 +145,31 @@ app.post('/talker', validateToken, async (request, response) => {
   return response.status(201).json(newTalker);
 });
 
+// req. 5:
+
+// req. 6:
+  app.delete('/talker/:id', validateToken, async (request, response) => {
+    const { id } = request.params;
+
+    const talkersData = await fs.readFile('./talker.json', 'utf-8');
+    const talkersList = JSON.parse(talkersData);
+
+    const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
+
+    if (talkerIndex === -1) return response.status(404).json({ message: 'Talker não encontrado' });
+
+    talkersList.splice(talkerIndex, 1);
+
+    console.log(talkersList);
+
+    const listWithoutDeletedTalker = JSON.stringify(talkersList);
+
+    await fs.writeFile('./talker.json', listWithoutDeletedTalker);
+
+    return response.status(200).json({ message: "Pessoa palestrante deletada com sucesso" });
+  });
+
+
 app.listen(PORT, () => {
   console.log('Online');
 });
