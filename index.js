@@ -43,32 +43,6 @@ app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
 
-// req. 1: 
-app.get('/talker', (_request, response) => {
-  const talkersRawData = fs.readFileSync('./talker.json');
-  const talkersData = JSON.parse(talkersRawData);
-
-  if (!talkersData || talkersData.length === 0) return response.status(200).json([]);
-
-  response.status(200).json(talkersData);
-});
-
-// req. 2: 
-app.get('/talker/:id', (request, response) => {
-  const talkersRawData = fs.readFileSync('./talker.json');
-  const talkersData = JSON.parse(talkersRawData);
-
-  const { id } = request.params;
-
-  const findTalkerById = talkersData.find((talker) => talker.id === Number(id));
-
-  if (!findTalkerById) {
-  return response.status(404).json({ message: 'Pessoa palestrante não encontrada' });
-  }
-
-  response.status(200).json(findTalkerById);
-});
-
 // req. 3:
 app.post('/login', (request, response) => {
   const { email, password } = request.body;
@@ -93,6 +67,56 @@ app.post('/login', (request, response) => {
   }
 
   response.status(200).json({ token });
+});
+
+// req. 1: 
+app.get('/talker', async (_request, response) => {
+  const talkersRawData = await fs.readFile('./talker.json');
+  const talkersData = JSON.parse(talkersRawData);
+
+  if (!talkersData || talkersData.length === 0) return response.status(200).json([]);
+
+  response.status(200).json(talkersData);
+});
+
+// req. 7: 
+app.get('/talker/search?', validateToken, async (request, response) => {
+  const { name } = request.query;
+
+  const talkersData = await fs.readFile('./talker.json');
+  const talkersList = JSON.parse(talkersData);
+
+  console.log("lista:", talkersList);
+
+  const filteredTalkersList = talkersList.filter((talker) => talker.name.includes(name));
+
+  console.log(filteredTalkersList);
+
+  if (!name || name === '') {
+    return response.status(200).json(talkersList);
+  }
+
+  if (filteredTalkersList.length === 0) {
+    return response.status(200).json([]);
+  }
+
+  response.status(200).json([...filteredTalkersList]);
+});
+
+// req. 2: 
+app.get('/talker/:id', async (request, response) => {
+  const talkersRawData = await fs.readFile('./talker.json');
+  const talkersData = JSON.parse(talkersRawData);
+
+  const { id } = request.params;
+
+  const findTalkerById = talkersData.find((talker) => talker.id === Number(id));
+
+  if (!findTalkerById) {
+  return response.status(404).json({ message: 'Pessoa palestrante não encontrada' });
+  }
+
+  response.status(200).json(findTalkerById);
 });
 
 // req 4: 
@@ -168,6 +192,8 @@ app.post('/talker', validateToken, async (request, response) => {
 
     return response.status(200).json({ message: "Pessoa palestrante deletada com sucesso" });
   });
+
+  
 
 
 app.listen(PORT, () => {
