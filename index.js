@@ -137,11 +137,8 @@ app.get('/talker/:id', async (request, response) => {
   response.status(200).json(findTalkerById);
 });
 
-// req 4: 
-app.post('/talker', validateToken, async (request, response) => {
-  const { name, age, talk } = request.body;
-
-  const talkersData = await readTalkersFIle();
+const validateName = (request, response, next) => {
+  const { name } = request.body;
 
   if (!name) {
     return response.status(400).json({ message: 'O campo "name" é obrigatório' });
@@ -151,6 +148,12 @@ app.post('/talker', validateToken, async (request, response) => {
     return response.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
   }
 
+  next();
+};
+
+const validateAge = (request, response, next) => {
+  const { age } = request.body;
+
   if (!age) {
     return response.status(400).json({ message: 'O campo "age" é obrigatório' });
   }
@@ -159,29 +162,51 @@ app.post('/talker', validateToken, async (request, response) => {
     return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
   }
 
-  if (!talk || !talk.watchedAt || !talk.rate) {
-    return response.status(400).json({ message: 'O campo "talk" é obrigatório e "watchedAt" e "rate" não podem ser vazios' });
-  }
+  next();
+};
+
+const validateDate = (request, response, next) => {
+  const { talk } = request.body;
 
   const isValidDateFormat = validateDateFormat(talk.watchedAt);
   
   if (!isValidDateFormat) {
-    return response.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
+    return response.status(400).json(
+      { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' },
+    );
   }
+
+  next();
+};
+
+const validateTalkRate = (request, response, next) => {
+  const { talk } = request.body;
 
   if (talk.rate < 1 || talk.rate > 5) {
     return response.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
   }
 
-  const newTalker = { id: talkersData.length + 1, name, age, talk };
+  next();
+};
 
-  const talkersList = [...talkersData, newTalker]; 
+// req 4: 
+app.post('/talker',
+  validateToken,
+  validateTalkObject,
+  validateName,
+  validateAge,
+  validateDate,
+  validateTalkRate,
+  async (request, response) => {
+    const { name, age, talk } = request.body;
+    const talkersData = await readTalkersFIle();
 
-  const talkersListString = JSON.stringify(talkersList);
+    const newTalker = { id: talkersData.length + 1, name, age, talk };
+    const talkersList = [...talkersData, newTalker]; 
+    const talkersListString = JSON.stringify(talkersList);
+    await fs.writeFile('./talker.json', talkersListString);
 
-  await fs.writeFile('./talker.json', talkersListString);
-
-  return response.status(201).json(newTalker);
+    return response.status(201).json(newTalker);
 });
 
 // req. 5:
