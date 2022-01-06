@@ -18,7 +18,7 @@ const validateToken = (request, response, next) => {
     return response.status(401).json({ message: 'Token inválido' });
   }
 
-  next();
+  return next();
 };
 
 const validateTalkObject = (request, response, next) => {
@@ -30,7 +30,7 @@ const validateTalkObject = (request, response, next) => {
     );
   }
 
-  next();
+  return next();
 };
 
 // retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
@@ -41,18 +41,17 @@ const validateEmailFormat = (email) => {
 
 const validateEmail = (request, response, next) => {
   const { email } = request.body;
+  const checkEmail = validateEmailFormat(email);
 
   if (!email || email === '') {
     return response.status(400).json({ message: 'O campo "email" é obrigatório' });
   }
-  
-  const checkEmail = validateEmailFormat(email);
 
   if (!checkEmail) {
     return response.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
   }
 
-  next();
+  return next();
 };
 
 const validatePassword = (request, response, next) => {
@@ -66,7 +65,7 @@ const validatePassword = (request, response, next) => {
     return response.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
   }
 
-  next();
+  return next();
 };
 
 const validateName = (request, response, next) => {
@@ -80,7 +79,7 @@ const validateName = (request, response, next) => {
     return response.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
   }
 
-  next();
+  return next();
 };
 
 const validateAge = (request, response, next) => {
@@ -94,7 +93,7 @@ const validateAge = (request, response, next) => {
     return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
   }
 
-  next();
+  return next();
 };
 
 // regex retirada de: https://stackoverflow.com/q/15491894
@@ -105,7 +104,6 @@ const validateDateFormat = (date) => {
 
 const validateDate = (request, response, next) => {
   const { talk } = request.body;
-
   const isValidDateFormat = validateDateFormat(talk.watchedAt);
   
   if (!isValidDateFormat) {
@@ -114,7 +112,7 @@ const validateDate = (request, response, next) => {
     );
   }
 
-  next();
+  return next();
 };
 
 const validateTalkRate = (request, response, next) => {
@@ -124,7 +122,7 @@ const validateTalkRate = (request, response, next) => {
     return response.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
   }
 
-  next();
+  return next();
 };
 
 const readTalkersFIle = async () => {
@@ -143,7 +141,7 @@ app.get('/', (_request, response) => {
 app.post('/login', validateEmail, validatePassword, (request, response) => {
   const token = '1569351970227241';
 
-  response.status(200).json({ token });
+  return response.status(200).json({ token });
 });
 
 // req. 1: 
@@ -152,7 +150,7 @@ app.get('/talker', async (_request, response) => {
 
   if (!talkersData || talkersData.length === 0) return response.status(200).json([]);
 
-  response.status(200).json(talkersData);
+  return response.status(200).json(talkersData);
 });
 
 // req. 7: 
@@ -171,14 +169,13 @@ app.get('/talker/search?', validateToken, async (request, response) => {
     return response.status(200).json([]);
   }
 
-  response.status(200).json([...filteredTalkersList]);
+  return response.status(200).json([...filteredTalkersList]);
 });
 
 // req. 2: 
 app.get('/talker/:id', async (request, response) => {
-  const talkersData = await readTalkersFIle();
-
   const { id } = request.params;
+  const talkersData = await readTalkersFIle();
 
   const findTalkerById = talkersData.find((talker) => talker.id === Number(id));
 
@@ -186,7 +183,7 @@ app.get('/talker/:id', async (request, response) => {
   return response.status(404).json({ message: 'Pessoa palestrante não encontrada' });
   }
 
-  response.status(200).json(findTalkerById);
+  return response.status(200).json(findTalkerById);
 });
 
 // req 4: 
@@ -220,34 +217,27 @@ app.put('/talker/:id',
   async (request, response) => {
     const { id } = request.params;
     const { name, age, talk } = request.body;
-
     const talkersList = await readTalkersFIle();
-
     const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
 
     talkersList[talkerIndex] = { ...talkersList[talkerIndex], name, age, talk };
-
     const editedtalkersList = JSON.stringify(talkersList);
 
     await fs.writeFile('./talker.json', editedtalkersList);
 
-    response.status(200).json(talkersList[talkerIndex]);
+    return response.status(200).json(talkersList[talkerIndex]);
 });
 
 // req. 6:
   app.delete('/talker/:id', validateToken, async (request, response) => {
     const { id } = request.params;
-
     const talkersList = await readTalkersFIle();
-
     const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
 
     if (talkerIndex === -1) return response.status(404).json({ message: 'Talker não encontrado' });
 
     talkersList.splice(talkerIndex, 1);
-
     const listWithoutDeletedTalker = JSON.stringify(talkersList);
-
     await fs.writeFile('./talker.json', listWithoutDeletedTalker);
 
     return response.status(200).json({ message: 'Pessoa palestrante deletada com sucesso' });
