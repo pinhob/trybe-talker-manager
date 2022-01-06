@@ -107,8 +107,7 @@ app.get('/talker', async (_request, response) => {
 app.get('/talker/search?', validateToken, async (request, response) => {
   const { name } = request.query;
 
-  const talkersData = await fs.readFile('./talker.json');
-  const talkersList = JSON.parse(talkersData);
+  const talkersList = await readTalkersFIle();
 
   const filteredTalkersList = talkersList.filter((talker) => talker.name.includes(name));
 
@@ -125,8 +124,7 @@ app.get('/talker/search?', validateToken, async (request, response) => {
 
 // req. 2: 
 app.get('/talker/:id', async (request, response) => {
-  const talkersRawData = await fs.readFile('./talker.json');
-  const talkersData = JSON.parse(talkersRawData);
+  const talkersData = await readTalkersFIle();
 
   const { id } = request.params;
 
@@ -143,8 +141,7 @@ app.get('/talker/:id', async (request, response) => {
 app.post('/talker', validateToken, async (request, response) => {
   const { name, age, talk } = request.body;
 
-  const talkersRawData = await fs.readFile('./talker.json', 'utf-8');
-  const talkersData = JSON.parse(talkersRawData);
+  const talkersData = await readTalkersFIle();
 
   if (!name) {
     return response.status(400).json({ message: 'O campo "name" é obrigatório' });
@@ -192,8 +189,7 @@ app.put('/talker/:id', validateToken, validateTalkObject, async (request, respon
   const { id } = request.params;
   const { name, age, talk } = request.body;
 
-  const talkersData = await fs.readFile('./talker.json', 'utf-8');
-  const talkersList = JSON.parse(talkersData);
+  const talkersList = await readTalkersFIle();
 
   if (!name) {
     return response.status(400).json({ message: 'O campo "name" é obrigatório' });
@@ -236,8 +232,7 @@ app.put('/talker/:id', validateToken, validateTalkObject, async (request, respon
   app.delete('/talker/:id', validateToken, async (request, response) => {
     const { id } = request.params;
 
-    const talkersData = await fs.readFile('./talker.json', 'utf-8');
-    const talkersList = JSON.parse(talkersData);
+    const talkersList = await readTalkersFIle();
 
     const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
 
