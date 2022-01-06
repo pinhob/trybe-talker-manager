@@ -7,6 +7,12 @@ app.use(bodyParser.json());
 const HTTP_OK_STATUS = 200;
 const PORT = '3000';
 
+// retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
+const validateEmailFormat = (email) => {
+  const validEmailFormat = /\S+@\S+\.\S+/;
+  return validEmailFormat.test(email);
+};
+
 const validateToken = (request, response, next) => {
   const { authorization } = request.headers;
 
@@ -31,12 +37,6 @@ const validateTalkObject = (request, response, next) => {
   }
 
   return next();
-};
-
-// retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
-const validateEmailFormat = (email) => {
-  const validEmailFormat = /\S+@\S+\.\S+/;
-  return email.match(validEmailFormat);
 };
 
 const validateEmail = (request, response, next) => {
