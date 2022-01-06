@@ -4,7 +4,6 @@ const fs = require('fs').promises;
 
 const app = express();
 app.use(bodyParser.json());
-
 const HTTP_OK_STATUS = 200;
 const PORT = '3000';
 
@@ -38,7 +37,9 @@ const validateTalkObject = (request, response, next) => {
   const { talk } = request.body;
 
   if (!talk || !talk.watchedAt || !talk.rate) {
-    return response.status(400).json({ message: 'O campo "talk" é obrigatório e "watchedAt" e "rate" não podem ser vazios' });
+    return response.status(400).json(
+      { message: 'O campo "talk" é obrigatório e "watchedAt" e "rate" não podem ser vazios' },
+    );
   }
 
   next();
@@ -74,6 +75,13 @@ const validatePassword = (request, response, next) => {
   next();
 };
 
+const readTalkersFIle = async () => {
+  const talkersRawData = await fs.readFile('./talker.json');
+  const talkersData = JSON.parse(talkersRawData);
+
+  return talkersData;
+};
+
 // não remova esse endpoint, e para o avaliador funcionar
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
@@ -88,8 +96,7 @@ app.post('/login', validateEmail, validatePassword, (request, response) => {
 
 // req. 1: 
 app.get('/talker', async (_request, response) => {
-  const talkersRawData = await fs.readFile('./talker.json');
-  const talkersData = JSON.parse(talkersRawData);
+  const talkersData = await readTalkersFIle();
 
   if (!talkersData || talkersData.length === 0) return response.status(200).json([]);
 
