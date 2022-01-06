@@ -8,11 +8,8 @@ app.use(bodyParser.json());
 const HTTP_OK_STATUS = 200;
 const PORT = '3000';
 
-// adaptado de: https://medium.com/@norbertofariasmedeiros/five-steps-como-gerar-um-random-token-em-javascript-1e1488a15d28
-const generateToken = () => Math.random().toString(10).substr(2);
-
 // retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
-const validateEmail = (email) => {
+const validateEmailFormat = (email) => {
   const validEmailFormat = /\S+@\S+\.\S+/;
   return email.match(validEmailFormat);
 };
@@ -27,15 +24,15 @@ const validateToken = (request, response, next) => {
   const { authorization } = request.headers;
 
   if (!authorization) {
-    return response.status(401).json({ message: "Token não encontrado" });
+    return response.status(401).json({ message: 'Token não encontrado' });
   }
 
   if (authorization.length !== 16) {
-    return response.status(401).json({ message: "Token inválido" });
+    return response.status(401).json({ message: 'Token inválido' });
   }
 
   next();
-}
+};
 
 const validateTalkObject = (request, response, next) => {
   const { talk } = request.body;
@@ -47,32 +44,48 @@ const validateTalkObject = (request, response, next) => {
   next();
 };
 
+const validateEmail = (request, response, next) => {
+  const { email } = request.body;
+
+  if (!email || email === '') {
+    return response.status(400).json({ message: 'O campo "email" é obrigatório' });
+  }
+  
+  const checkEmail = validateEmailFormat(email);
+
+  if (!checkEmail) {
+    return response.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
+  }
+
+  next();
+};
+
 // não remova esse endpoint, e para o avaliador funcionar
 app.get('/', (_request, response) => {
   response.status(HTTP_OK_STATUS).send();
 });
 
 // req. 3:
-app.post('/login', (request, response) => {
+app.post('/login', validateEmail, (request, response) => {
   const { email, password } = request.body;
   const token = '1569351970227241';
   
-  if (!email || email === '') {
-    return response.status(400).json({ message: 'O campo "email" é obrigatório' });
-  }
+  // if (!email || email === '') {
+  //   return response.status(400).json({ message: 'O campo "email" é obrigatório' });
+  // }
   
-  const checkEmail = validateEmail(email);
+  // const checkEmail = validateEmailFormat(email);
 
-  if (!checkEmail) {
-    return response.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
-  }
+  // if (!checkEmail) {
+  //   return response.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
+  // }
 
   if (!password || password === '') {
     return response.status(400).json({ message: 'O campo "password" é obrigatório' });
   }
 
   if (password.length < 6) {
-    return response.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' })
+    return response.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
   }
 
   response.status(200).json({ token });
@@ -126,8 +139,6 @@ app.get('/talker/:id', async (request, response) => {
 
 // req 4: 
 app.post('/talker', validateToken, async (request, response) => {
-  const { authorization } = request.headers;
-  
   const { name, age, talk } = request.body;
 
   const talkersRawData = await fs.readFile('./talker.json', 'utf-8');
@@ -153,7 +164,7 @@ app.post('/talker', validateToken, async (request, response) => {
     return response.status(400).json({ message: 'O campo "talk" é obrigatório e "watchedAt" e "rate" não podem ser vazios' });
   }
 
-  const isValidDateFormat = validateDateFormat(talk.watchedAt)
+  const isValidDateFormat = validateDateFormat(talk.watchedAt);
   
   if (!isValidDateFormat) {
     return response.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
@@ -198,7 +209,7 @@ app.put('/talker/:id', validateToken, validateTalkObject, async (request, respon
     return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
   }
 
-  const isValidDateFormat = validateDateFormat(talk.watchedAt)
+  const isValidDateFormat = validateDateFormat(talk.watchedAt);
   
   if (!isValidDateFormat) {
     return response.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
@@ -238,9 +249,6 @@ app.put('/talker/:id', validateToken, validateTalkObject, async (request, respon
 
     return response.status(200).json({ message: 'Pessoa palestrante deletada com sucesso' });
   });
-
-  
-
 
 app.listen(PORT, () => {
   console.log('Online');
