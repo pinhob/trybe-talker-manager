@@ -60,25 +60,8 @@ const validateEmail = (request, response, next) => {
   next();
 };
 
-// não remova esse endpoint, e para o avaliador funcionar
-app.get('/', (_request, response) => {
-  response.status(HTTP_OK_STATUS).send();
-});
-
-// req. 3:
-app.post('/login', validateEmail, (request, response) => {
-  const { email, password } = request.body;
-  const token = '1569351970227241';
-  
-  // if (!email || email === '') {
-  //   return response.status(400).json({ message: 'O campo "email" é obrigatório' });
-  // }
-  
-  // const checkEmail = validateEmailFormat(email);
-
-  // if (!checkEmail) {
-  //   return response.status(400).json({ message: 'O "email" deve ter o formato "email@email.com"' });
-  // }
+const validatePassword = (request, response, next) => {
+  const { password } = request.body;
 
   if (!password || password === '') {
     return response.status(400).json({ message: 'O campo "password" é obrigatório' });
@@ -87,6 +70,18 @@ app.post('/login', validateEmail, (request, response) => {
   if (password.length < 6) {
     return response.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
   }
+
+  next();
+};
+
+// não remova esse endpoint, e para o avaliador funcionar
+app.get('/', (_request, response) => {
+  response.status(HTTP_OK_STATUS).send();
+});
+
+// req. 3:
+app.post('/login', validateEmail, validatePassword, (request, response) => {
+  const token = '1569351970227241';
 
   response.status(200).json({ token });
 });
