@@ -7,18 +7,6 @@ app.use(bodyParser.json());
 const HTTP_OK_STATUS = 200;
 const PORT = '3000';
 
-// retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
-const validateEmailFormat = (email) => {
-  const validEmailFormat = /\S+@\S+\.\S+/;
-  return email.match(validEmailFormat);
-};
-
-// regex retirada de: https://stackoverflow.com/q/15491894
-const validateDateFormat = (date) => {
-  const validDateFormat = /^(0?[1-9]|[12][0-9]|3[01])[/-](0?[1-9]|1[012])[/-]\d{4}$/;
-  return date.match(validDateFormat);
-};
-
 const validateToken = (request, response, next) => {
   const { authorization } = request.headers;
 
@@ -43,6 +31,12 @@ const validateTalkObject = (request, response, next) => {
   }
 
   next();
+};
+
+// retirado de: https://stackoverflow.com/questions/46155/whats-the-best-way-to-validate-an-email-address-in-javascript
+const validateEmailFormat = (email) => {
+  const validEmailFormat = /\S+@\S+\.\S+/;
+  return email.match(validEmailFormat);
 };
 
 const validateEmail = (request, response, next) => {
@@ -70,6 +64,64 @@ const validatePassword = (request, response, next) => {
 
   if (password.length < 6) {
     return response.status(400).json({ message: 'O "password" deve ter pelo menos 6 caracteres' });
+  }
+
+  next();
+};
+
+const validateName = (request, response, next) => {
+  const { name } = request.body;
+
+  if (!name) {
+    return response.status(400).json({ message: 'O campo "name" é obrigatório' });
+  }
+
+  if (name.length < 3) {
+    return response.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
+  }
+
+  next();
+};
+
+const validateAge = (request, response, next) => {
+  const { age } = request.body;
+
+  if (!age) {
+    return response.status(400).json({ message: 'O campo "age" é obrigatório' });
+  }
+
+  if (Number(age) < 18) {
+    return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
+  }
+
+  next();
+};
+
+// regex retirada de: https://stackoverflow.com/q/15491894
+const validateDateFormat = (date) => {
+  const validDateFormat = /^(0?[1-9]|[12][0-9]|3[01])[/-](0?[1-9]|1[012])[/-]\d{4}$/;
+  return date.match(validDateFormat);
+};
+
+const validateDate = (request, response, next) => {
+  const { talk } = request.body;
+
+  const isValidDateFormat = validateDateFormat(talk.watchedAt);
+  
+  if (!isValidDateFormat) {
+    return response.status(400).json(
+      { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' },
+    );
+  }
+
+  next();
+};
+
+const validateTalkRate = (request, response, next) => {
+  const { talk } = request.body;
+
+  if (talk.rate < 1 || talk.rate > 5) {
+    return response.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
   }
 
   next();
@@ -137,58 +189,6 @@ app.get('/talker/:id', async (request, response) => {
   response.status(200).json(findTalkerById);
 });
 
-const validateName = (request, response, next) => {
-  const { name } = request.body;
-
-  if (!name) {
-    return response.status(400).json({ message: 'O campo "name" é obrigatório' });
-  }
-
-  if (name.length < 3) {
-    return response.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
-  }
-
-  next();
-};
-
-const validateAge = (request, response, next) => {
-  const { age } = request.body;
-
-  if (!age) {
-    return response.status(400).json({ message: 'O campo "age" é obrigatório' });
-  }
-
-  if (Number(age) < 18) {
-    return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
-  }
-
-  next();
-};
-
-const validateDate = (request, response, next) => {
-  const { talk } = request.body;
-
-  const isValidDateFormat = validateDateFormat(talk.watchedAt);
-  
-  if (!isValidDateFormat) {
-    return response.status(400).json(
-      { message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' },
-    );
-  }
-
-  next();
-};
-
-const validateTalkRate = (request, response, next) => {
-  const { talk } = request.body;
-
-  if (talk.rate < 1 || talk.rate > 5) {
-    return response.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
-  }
-
-  next();
-};
-
 // req 4: 
 app.post('/talker',
   validateToken,
@@ -210,47 +210,28 @@ app.post('/talker',
 });
 
 // req. 5:
-app.put('/talker/:id', validateToken, validateTalkObject, async (request, response) => {
-  const { id } = request.params;
-  const { name, age, talk } = request.body;
+app.put('/talker/:id',
+  validateToken,
+  validateTalkObject,
+  validateName,
+  validateAge,
+  validateDate,
+  validateTalkRate,
+  async (request, response) => {
+    const { id } = request.params;
+    const { name, age, talk } = request.body;
 
-  const talkersList = await readTalkersFIle();
+    const talkersList = await readTalkersFIle();
 
-  if (!name) {
-    return response.status(400).json({ message: 'O campo "name" é obrigatório' });
-  }
+    const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
 
-  if (name.length < 3) {
-    return response.status(400).json({ message: 'O "name" deve ter pelo menos 3 caracteres' });
-  }
+    talkersList[talkerIndex] = { ...talkersList[talkerIndex], name, age, talk };
 
-  if (!age) {
-    return response.status(400).json({ message: 'O campo "age" é obrigatório' });
-  }
+    const editedtalkersList = JSON.stringify(talkersList);
 
-  if (Number(age) < 18) {
-    return response.status(400).json({ message: 'A pessoa palestrante deve ser maior de idade' });
-  }
+    await fs.writeFile('./talker.json', editedtalkersList);
 
-  const isValidDateFormat = validateDateFormat(talk.watchedAt);
-  
-  if (!isValidDateFormat) {
-    return response.status(400).json({ message: 'O campo "watchedAt" deve ter o formato "dd/mm/aaaa"' });
-  }
-
-  if ((talk.rate && talk.rate < 1) || (talk.rate && talk.rate > 5)) {
-    return response.status(400).json({ message: 'O campo "rate" deve ser um inteiro de 1 à 5' });
-  }
-
-  const talkerIndex = talkersList.findIndex((talker) => talker.id === Number(id));
-
-  talkersList[talkerIndex] = { ...talkersList[talkerIndex], name, age, talk };
-
-  const editedtalkersList = JSON.stringify(talkersList);
-
-  await fs.writeFile('./talker.json', editedtalkersList);
-
-  response.status(200).json(talkersList[talkerIndex]);
+    response.status(200).json(talkersList[talkerIndex]);
 });
 
 // req. 6:
